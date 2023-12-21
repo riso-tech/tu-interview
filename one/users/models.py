@@ -1,7 +1,21 @@
 from django.contrib.auth.models import AbstractUser
-from django.db.models import CharField
+from django.db.models import CASCADE, CharField, ForeignKey, Model
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+
+
+class Company(Model):
+    name = CharField("Company Name", max_length=150)
+
+
+class Department(Model):
+    name = CharField("Department Name", max_length=150)
+    company = ForeignKey(Company, on_delete=CASCADE)
+
+
+class Position(Model):
+    name = CharField("Position Name", max_length=150)
+    department = ForeignKey(Department, on_delete=CASCADE)
 
 
 class User(AbstractUser):
@@ -11,10 +25,18 @@ class User(AbstractUser):
     check forms.SignupForm and forms.SocialSignupForms accordingly.
     """
 
-    # First and last name do not cover name patterns around the globe
-    name = CharField(_("Name of User"), blank=True, max_length=255)
-    first_name = None  # type: ignore
-    last_name = None  # type: ignore
+    STATUS_ACTIVE = 2
+    STATUS_INACTIVE = 1
+    STATUS_TERMINATED = 0
+    STATUS_CHOICES = ((STATUS_ACTIVE, "Active"), (STATUS_INACTIVE, "Not Started"), (STATUS_TERMINATED, "Terminated"))
+
+    status = CharField(_("Status"), max_length=10, choices=STATUS_CHOICES, default=STATUS_INACTIVE)
+
+    company = ForeignKey(Company, on_delete=CASCADE, null=True, blank=True)
+    department = ForeignKey(Department, on_delete=CASCADE, null=True, blank=True)
+    position = ForeignKey(Position, on_delete=CASCADE, null=True, blank=True)
+
+    name = CharField(_("Full Name"), max_length=250, null=True, blank=True)
 
     def get_absolute_url(self) -> str:
         """Get URL for user's detail view.
@@ -24,3 +46,6 @@ class User(AbstractUser):
 
         """
         return reverse("users:detail", kwargs={"username": self.username})
+
+    def get_status_display(self) -> str:
+        return dict(self.STATUS_CHOICES).get(int(self.status), self.status)

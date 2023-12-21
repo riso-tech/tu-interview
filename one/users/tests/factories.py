@@ -2,14 +2,43 @@ from collections.abc import Sequence
 from typing import Any
 
 from django.contrib.auth import get_user_model
-from factory import Faker, post_generation
+from factory import Faker, SubFactory, post_generation
 from factory.django import DjangoModelFactory
+
+from one.users.models import Company, Department, Position
+
+
+class CompanyFactory(DjangoModelFactory):
+    name = Faker("name")
+
+    class Meta:
+        model = Company
+
+
+class DepartmentFactory(DjangoModelFactory):
+    name = Faker("name")
+    company = SubFactory(CompanyFactory)
+
+    class Meta:
+        model = Department
+
+
+class PositionFactory(DjangoModelFactory):
+    name = Faker("name")
+    department = SubFactory(DepartmentFactory)
+
+    class Meta:
+        model = Position
 
 
 class UserFactory(DjangoModelFactory):
     username = Faker("user_name")
     email = Faker("email")
     name = Faker("name")
+    first_name = Faker("name")
+    company = SubFactory(CompanyFactory)
+    department = SubFactory(DepartmentFactory)
+    position = SubFactory(PositionFactory)
 
     @post_generation
     def password(self, create: bool, extracted: Sequence[Any], **kwargs):
